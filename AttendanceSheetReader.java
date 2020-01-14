@@ -1,3 +1,4 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CreationHelper;
@@ -7,6 +8,7 @@ import org.apache.poi.xssf.usermodel.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -14,26 +16,40 @@ import java.util.*;
 public class AttendanceSheetReader
 {
     private static ArrayList<String> info = new ArrayList<>();
-    //    private static Stack<CFKRoom> cfkStack = new Stack<>();
-    private static SortedMap<String,ArrayList<CFKRoom>> studentMap = new TreeMap<>();
-    private static SortedMap<String,ArrayList<CFKRoom>> teacherMap = new TreeMap<>();
+    private static SortedMap<String,ArrayList<CFKRoom>> studentMap;
+    private static SortedMap<String,ArrayList<CFKRoom>> teacherMap;
     private final static String TEACHERS = "C:\\Code\\ExcelReading\\Me\\Cuesta\\Project\\Output\\Teachers\\teachers.xlsx";
     private final static String SUMMARY = "C:\\Code\\ExcelReading\\Me\\Cuesta\\Project\\Output\\Summary";
     private final static String STUDENTS = "C:\\Code\\ExcelReading\\Me\\Cuesta\\Project\\Output\\Students";
     private final static String TEACHERROOMLINKS = "C:/Code/ExcelReading/Me/Cuesta/Project/Output/TeacherRoomLinks/";
     private final static String ROOMS = "C:/Code/ExcelReading/Me/Cuesta/Project/Output/Rooms/";
     private final static String READLOCTATION = "C:\\Code\\ExcelReading\\Me\\Cuesta\\Project\\ExcelFiles\\attendance-sheets.xlsx";
-    public static void main(String [] args)
+    public AttendanceSheetReader()
     {
+        studentMap = new TreeMap<>();
+        teacherMap = new TreeMap<>();
         formatInfo();
         readInfo();
-        //readRooms();
-        createTeacherSheet();
+    }
+
+    public static void main(String[] args)
+    {
+        new AttendanceSheetReader();
     }
 
 
+
+    public static SortedMap<String,ArrayList<CFKRoom>> getStudentMap()
+    {
+        return new TreeMap<>(studentMap);
+    }
+    public static SortedMap<String,ArrayList<CFKRoom>> getTeacherMap()
+    {
+        return new TreeMap<>(teacherMap);
+    }
+
     public static void formatInfo()
-            {
+    {
         try (FileInputStream f = new FileInputStream(READLOCTATION))
         {
             XSSFWorkbook workbook = new XSSFWorkbook(f);
@@ -51,9 +67,7 @@ public class AttendanceSheetReader
                     String val = cellIterator.next().toString();
 
                     if (!val.isEmpty())
-                    {
                         info.add(val);
-                    }
                 }
             }
             for (int i = 0; i < info.size(); i++)
@@ -67,9 +81,7 @@ public class AttendanceSheetReader
 
                 }
             }
-
-
-        }catch(Exception fnf)
+       }catch(Exception fnf)
         {
             fnf.printStackTrace();
         }
@@ -246,7 +258,7 @@ public class AttendanceSheetReader
         {
             System.out.print(val.getKey() + ": " + val.getValue().size() + "\n");
             ArrayList<CFKRoom> room = val.getValue();
-            sortByTime(room);
+            //sortByTime(room);
             for (int i = 0; i < room.size(); i++)
             {
                 System.out.println(room.get(i));
@@ -254,6 +266,41 @@ public class AttendanceSheetReader
 
             System.out.println("\n");
         }
+    }
+
+    public static List<Object> getTeachers()
+    {
+        if (teacherMap != null)
+        {
+            List<Object> arr = new ArrayList<>();
+            Set<Map.Entry<String,ArrayList<CFKRoom>>> set = teacherMap.entrySet();
+
+            for (Map.Entry<String,ArrayList<CFKRoom>> val : set)
+            {
+                arr.add(val.getKey());
+            }
+            return arr;
+        }
+        return new ArrayList<>();
+    }
+
+    public static String createJsonFile()
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(teacherMap);
+            System.out.println(json);
+//            System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+//            String students = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(studentMap);
+//            System.out.println(students);
+            return json;
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static void sortByTime(ArrayList<CFKRoom> room)
